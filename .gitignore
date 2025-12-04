@@ -1,0 +1,67 @@
+__pycache__/
+RESULTS/
+.idea/
+.pytest_cache/
+*.png
+*.hdf5
+*.h5
+*.nc
+*.cdf
+*.dat
+*.bin
+*.txt
+*.pdf
+*.pyd
+*.npy
+*.vtk
+*.csv
+*.pkl
+# do not ignore atomic data files in pyfidasim/tables
+!/pyfidasim/tables/*.*
+
+# however, do ignore fidasim_tables.hdf5 (automatically made in cr_model.load_tables())
+/pyfidasim/tables/fidasim_tables.hdf5
+
+# VIM temporary files #
+#######################
+*~
+*.swp
+*.swo
+
+# Jupyter #
+###########
+*.ipynb
+.ipynb*
+
+# VS code settings #
+####################
+.vscode*
+.vscode/*
+
+# log files #
+examples/W7X/debug.log
+pyfidasim.code-workspace
+pyfidasim/input_preparation/W7X/read_write_fidasim_files.py
+example/comp_data/*
+example/Data/*
+pyfidasim/TRANSP/Data/OMF190500.NB2
+lensopt/*
+example/F90_comp_data/330LT_equilibrium.h5_fidasim2
+example/F90_comp_data/330LT_equilibrium.h5_fidasim3
+example/F90_comp_data/330LT_inputs.dat_fidasim2
+example/F90_comp_data/330LT_inputs.dat_fidasim3
+example/F90_comp_data/330LT.out
+example/F90_comp_data/g159243.00430
+example/F90_comp_data/330LT_inputs.dat_orig
+example/VectorizedTest/cr_model.py
+example/VectorizedTest/grid3d.py
+example/VectorizedTest/mc_fastion.py
+example/VectorizedTest/OLD_main.py
+example/VectorizedTest/OLD_pyfidasim_core_routine.py
+example/VectorizedTest/runColRad.py
+example/VectorizedTest/sgrid.py
+example/VectorizedTest/spectrum.py
+example/VectorizedTest/toolbox.py
+example/ColradRoutineTest/test_mc_cx_test.py
+example/ColradRoutineTest/test_mc_cx.py
+example/F90_halo/g159243.00430
