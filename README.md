@@ -1,6 +1,10 @@
 # pyFIDASIM
 
-pyFIDASIM is a Monte Carlo code to simulate the neutral beam attenuation and emission in magnetically confined plasma.
+pyFIDASIM is a Monte Carlo code to simulate the neutral beam attenuation and emission in magnetically confined plasma. This version is meant as a test-bed for prototyping functionality to add to FIDASIM.
+
+This version employs different methodology than FIDASIM by tracking beam marker and subsequent neutrals formed after charge-exchange. The full statistical method accounts for fast-neutral losses that reduce predicted halo densities. In addition, interpolation errors at plasma boundaries have been fixed which improves accuracy in those regions. For more information, please see the pyFIDASIM / FIDASIM 3.0 release paper. Other questions or concerns can be sent to ajedmondson@wisc.edu.
+
+Please note this version is slower since it employs vectorization, but limited parallelization. NUMBA just-in-time compilation partially reduces the Python slowdown, but only covers certain areas due to current level of support. 
 
 ## Installation
 Since pyfidasim is currently not on "pip" or any other equivalent package distributor, there are several different installation methods.
