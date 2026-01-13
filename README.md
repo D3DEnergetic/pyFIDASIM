@@ -6,6 +6,8 @@ This version employs different methodology than FIDASIM by tracking beam marker 
 
 Please note this version is slower since it employs vectorization, but limited parallelization. NUMBA just-in-time compilation partially reduces the Python slowdown, but only covers certain areas due to current level of support. 
 
+Warning: Halo results will be incorrect unless you include the fast-ion distribution.
+
 ## Installation
 Since pyfidasim is currently not on "pip" or any other equivalent package distributor, there are several different installation methods.
 
