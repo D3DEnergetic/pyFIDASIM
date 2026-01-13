@@ -239,7 +239,9 @@ def pyfidasim_core_routine(
             ## -Determine CHARGE EXCHANGE (CX) and IONIZATION probabiliites-
             ## -------------------------------------------------------------
             ## For this we firstly define the velocity vector. We will either use a thermal velocity:
+            '''
             v_xyz_new = np.sqrt(ti[dis,ii][:,np.newaxis] * 1.e3 * consts.e / (prof_ai*consts.atomic_mass)) * 100. * np.random.randn(np.shape(ir)[0],3)  + vrot[dis,:, ii]
+            
             ## Check if we should consider a fast-ion velocity vector:
             if fbm_afbm > 0:
                 denp_slice = np.copy(denp[dis, ii])
@@ -272,6 +274,67 @@ def pyfidasim_core_routine(
             sigma_v_cx = table_interp(tb_neutrates,eb_nrate_log,np.ones(np.shape(eb_nrate_log)[0])*-99.,tb_energy_ax,tb_temp_ax) # [cm^3/s]
             nrate = sigma_v_cx*denp[dis,ii, np.newaxis, np.newaxis] # [1/s]
             
+            '''
+            ## -------------------------------------------------------------
+            ## -Determine CHARGE EXCHANGE (CX) and IONIZATION probabiliites-
+            ## -------------------------------------------------------------
+            # 1. Setup initial thermal velocities
+            v_xyz_new = np.sqrt(ti[dis,ii][:,np.newaxis] * 1.e3 * consts.e / (prof_ai*consts.atomic_mass)) * 100. * np.random.randn(np.shape(ir)[0],3)  + vrot[dis,:, ii]
+            
+            # 2. Initialize variables for the whole batch
+            nrate = np.zeros((ir.shape[0], 7, 6))
+            fast_ion_mask = np.zeros(ir.shape[0], dtype=np.bool_)
+            
+            # 3. Only process particles inside the grid to prevent boundary crashes
+            if np.any(grid_mask):
+                # Subset data for grid locations
+                v_xyz_sub = v_xyz[dis,:][grid_mask, :]
+                v_th_sub = v_xyz_new[grid_mask, :]
+                denp_sub = denp[dis, ii][grid_mask]
+                
+                # Thermal Rates for subset
+                vnet_th = v_xyz_sub - v_th_sub
+                vnet_th_sq = np.sum(vnet_th**2, axis=1) / 1.e4
+                eb_th_log = np.log10(0.5 * consts.atomic_mass * vnet_th_sq / consts.e / 1.e3)
+                sig_th = table_interp(tb_neutrates, eb_th_log, np.ones_like(eb_th_log)*-99., tb_energy_ax, tb_temp_ax)
+                
+                if fbm_afbm > 0:
+                    denf_sub = denf_arr[dis, ii][grid_mask]
+                    # Fast-Ion Rates for subset
+                    v_fa_sub = mc_fastion(xyzc_arr[dis, :, ii][grid_mask], fields_params, fbm_params)
+                    vnet_fa = v_xyz_sub - v_fa_sub
+                    vnet_fa_sq = np.sum(vnet_fa**2, axis=1) / 1.e4
+                    eb_fa_log = np.log10(0.5 * consts.atomic_mass * vnet_fa_sq / consts.e / 1.e3)
+                    sig_fa = table_interp(tb_neutrates, eb_fa_log, np.ones_like(eb_fa_log)*-99., tb_energy_ax, tb_temp_ax)
+                    
+                    # Competitive Ratio calculation
+                    ni_th_sub = np.maximum(denp_sub - denf_sub, 0.0)
+                    r_th_sub = np.sum(sig_th, axis=(1, 2)) * ni_th_sub
+                    r_fa_sub = np.sum(sig_fa, axis=(1, 2)) * denf_sub
+                    r_tot_sub = r_th_sub + r_fa_sub
+                    
+                    # Determine winner for the subset
+                    prob_fa_sub = np.divide(r_fa_sub, r_tot_sub, out=np.zeros_like(r_fa_sub), where=r_tot_sub > 0)
+                    mask_sub = prob_fa_sub > np.random.rand(len(prob_fa_sub))
+                    
+                    # Update the global fast_ion_mask and velocities
+                    fast_ion_mask[grid_mask] = mask_sub
+                    
+                    # Velocity update for winning fast neutrals
+                    v_res_sub = v_th_sub
+                    for k in range(len(mask_sub)):
+                        if mask_sub[k]:
+                            v_res_sub[k] = v_fa_sub[k]
+                    v_xyz_new[grid_mask] = v_res_sub
+                    
+                    # Combined nrate for attenuation solver
+                    nrate[grid_mask] = (sig_th * ni_th_sub[:, np.newaxis, np.newaxis] + 
+                                       sig_fa * denf_sub[:, np.newaxis, np.newaxis])
+                else:
+                    # No Fast Ions case
+                    nrate[grid_mask] = sig_th * denp_sub[:, np.newaxis, np.newaxis]
+            
+
             ## ----------------------------------------
             ## ---- determine CX probability ----------
             ## ----------------------------------------
@@ -332,10 +395,13 @@ def pyfidasim_core_routine(
             # now also add the diagonal elements
             diagonal_non_impurity = np.sum(qp, axis=1) + np.sum(qe, axis=1)
             diagonal_impurity = np.sum(qc, axis=(1, 2))
+            cx_loss_diagonal = np.sum(nrate, axis=1) 
+            
             diagonal = (
                 diagonal_einstein[np.newaxis, :] +
                 diagonal_non_impurity +
-                diagonal_impurity
+                diagonal_impurity +
+                cx_loss_diagonal[:, 0:6]
             )
             rate_matrix[:, np.arange(6), np.arange(6)] = -diagonal
             iflux = np.sum(states[dis,:],axis=1)
@@ -501,7 +567,7 @@ def pyfidasim_core_routine(
             if np.any(cx_happens_in_this_cell) and ncx_iter > 1:
                 indices_dis = np.where(dis)[0]
                 indices_subset = indices_dis[cx_happens_in_this_cell]
-                cx_flux = np.einsum('ijk,ik->ij', sigma_v_cx[cx_happens_in_this_cell], dens[cx_happens_in_this_cell])
+                cx_flux = np.einsum('ijk,ik->ij', nrate[cx_happens_in_this_cell], dens[cx_happens_in_this_cell])
                 states[indices_subset] = (cx_flux[:, 0:6] / np.sum(cx_flux[:, 0:6], axis=1, keepdims=True)) \
                                  * sumstates[cx_happens_in_this_cell, np.newaxis]
                 start_pos[indices_subset, :] = xyzc_arr[indices_subset, :, ii] \
