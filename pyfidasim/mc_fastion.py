@@ -78,8 +78,16 @@ def mc_fastion_core(xyz_array, fbm, afbm, btipsign, \
     ir = ((R - f_Rmin + 0.5 * f_dR) / f_dR).astype(np.int64)
     iz = ((Z - f_Zmin + 0.5 * f_dZ) / f_dZ).astype(np.int64)
 
-    energy2d = np.ravel(np.outer(np.ones(npitch), energy))
-    pitch2d = np.ravel(np.outer(pitch, np.ones(nenergy)))
+    n_total = nenergy * npitch
+    energy2d = np.empty(n_total, dtype=energy.dtype)
+    pitch2d = np.empty(n_total, dtype=pitch.dtype)
+    
+    idx = 0
+    for i in range(nenergy):
+        for j in range(npitch):
+            energy2d[idx] = energy[i]
+            pitch2d[idx] = pitch[j]
+            idx += 1
 
     for p_idx in range(n_particles):
         fbm_slice = fbm[:, :, ir[p_idx], iz[p_idx]]

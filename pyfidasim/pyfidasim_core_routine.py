@@ -309,8 +309,14 @@ def pyfidasim_core_routine(
                     
                     # Competitive Ratio calculation
                     ni_th_sub = np.maximum(denp_sub - denf_sub, 0.0)
-                    r_th_sub = np.sum(sig_th, axis=(1, 2)) * ni_th_sub
-                    r_fa_sub = np.sum(sig_fa, axis=(1, 2)) * denf_sub
+                    
+                    # Multiply the cross-sections by the quantum state distribution of the particles
+                    current_states = states[dis, :][grid_mask]
+                    weighted_sig_th = np.einsum('ijk,ik->i', sig_th, current_states)
+                    weighted_sig_fa = np.einsum('ijk,ik->i', sig_fa, current_states)
+                    
+                    r_th_sub = weighted_sig_th * ni_th_sub
+                    r_fa_sub = weighted_sig_fa * denf_sub
                     r_tot_sub = r_th_sub + r_fa_sub
                     
                     # Determine winner for the subset
@@ -338,9 +344,10 @@ def pyfidasim_core_routine(
             ## ----------------------------------------
             ## ---- determine CX probability ----------
             ## ----------------------------------------
-            ## the CX probabiity is obtained by summing all final states and multiplying by dt
-            cx_prob=np.sum(nrate,axis=1)*dt_arr[dis,ii, np.newaxis]   # [1/s]
-            cx_prob_weighted=cx_prob*states[dis,:]/np.max(states,axis=1)[dis,np.newaxis] ## Now we have to weight the different states
+            ## the CX probabiity is obtained by summing all bound final states (0:6) and multiplying by dt
+            cx_prob=np.sum(nrate[:, 0:6, :], axis=1)*dt_arr[dis,ii, np.newaxis]   # [1/s]
+            
+            cx_prob_weighted=cx_prob*states[dis,:]/np.sum(states,axis=1)[dis,np.newaxis] ## Now we have to weight the different states
             cx_prob_tot=1.-np.prod(1.-cx_prob_weighted,axis=1)
             
             ## ---------------------------------------
@@ -356,30 +363,16 @@ def pyfidasim_core_routine(
             for jj in range(tb_nimps):
                 i_prob += qc[:,jj,6,:]
             i_prob *= dt_arr[dis,ii,np.newaxis]
-            i_prob_weighted=i_prob*states[dis,:]/np.max(states[dis,:],axis=1)[:,np.newaxis]
+
+            i_prob_weighted=i_prob*states[dis,:]/np.sum(states[dis,:],axis=1)[:,np.newaxis]
             i_prob_tot=1.-np.prod(1.-i_prob_weighted,axis=1)
 
-            # Convert Bernoulli-in-dt to equivalent exponential rates
+            # Convert Bernoulli-in-dt to equivalent exponential rates for branching ratio
             eps = 1e-16
             dtv = dt_arr[dis, ii]  # (K,)
             lam_cx  = -np.log1p(-np.clip(cx_prob_tot, 0.0, 1.0 - eps)) / dtv
             lam_ion = -np.log1p(-np.clip(i_prob_tot, 0.0, 1.0 - eps)) / dtv
             Lam = lam_cx + lam_ion
-            
-            # Probability at least one event occurs in dt
-            p_any = 1.0 - np.exp(-Lam * dtv)
-            
-            u  = np.random.rand(Lam.shape[0])
-            u2 = np.random.rand(Lam.shape[0])
-            
-            event = u < p_any
-            # Conditional probability the event is CX given that "an" event occurred
-            # (classical competing exponentials)
-            with np.errstate(invalid='ignore', divide='ignore'):
-                p_cx_given_any = np.where(Lam > 0.0, lam_cx / Lam, 0.0)
-            
-            cx_happens_in_this_cell         = event & (u2 < p_cx_given_any)
-            ionization_happens_in_this_cell = event & ~ (u2 < p_cx_given_any)
             
             ## ----------------------------------------------------------------
             ## ---------- run COLRAD ------------------------------------------
@@ -393,7 +386,7 @@ def pyfidasim_core_routine(
             for jj in range(tb_nimps):
                 rate_matrix += qc[:,jj,0:6,:]
             # now also add the diagonal elements
-            diagonal_non_impurity = np.sum(qp, axis=1) + np.sum(qe, axis=1)
+            diagonal_non_impurity = np.sum(qp_no_cx, axis=1) + np.sum(qe, axis=1)
             diagonal_impurity = np.sum(qc, axis=(1, 2))
             cx_loss_diagonal = np.sum(nrate, axis=1) 
             
@@ -405,9 +398,27 @@ def pyfidasim_core_routine(
             )
             rate_matrix[:, np.arange(6), np.arange(6)] = -diagonal
             iflux = np.sum(states[dis,:],axis=1)
+            
             ## run COLRAD
             states[dis,:], dens = colrad(dt_arr[dis,ii], rate_matrix, states[dis,:])
             sumstates = np.sum(states[dis,:],axis=1)
+            
+            # -----------------------------------------------------------------
+            # Probability at least one event occurs in dt
+            p_any = np.clip(1.0 - (sumstates / iflux), 0.0, 1.0)
+            
+            u  = np.random.rand(Lam.shape[0])
+            u2 = np.random.rand(Lam.shape[0])
+            
+            event = u < p_any
+            
+            # Conditional probability the event is CX given that "an" event occurred
+            # (competing exponentials)
+            with np.errstate(invalid='ignore', divide='ignore'):
+                p_cx_given_any = np.where(Lam > 0.0, lam_cx / Lam, 0.0)
+            
+            cx_happens_in_this_cell         = event & (u2 < p_cx_given_any)
+            ionization_happens_in_this_cell = event & ~ (u2 < p_cx_given_any)
             
             ## now normalize the states
             states[dis,:]*=iflux[:,np.newaxis]/sumstates[:,np.newaxis]
