@@ -344,7 +344,7 @@ def add_shot_beam_fractions(shot_number, beam_fractions, source, overwrite = Fal
 def calc_arot_brot(direction):
     assert(direction.size == 3)
     y = direction[2]
-    x = np.sqrt(np.sum(direction[:]**2))
+    x = np.sqrt(direction[0]**2 + direction[1]**2)
     b = np.arctan2(y, x)
     Arot = np.array([[np.cos(b), 0., np.sin(b)],
                      [0., 1., 0.],
