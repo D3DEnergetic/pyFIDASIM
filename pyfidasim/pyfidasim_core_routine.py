@@ -238,46 +238,6 @@ def pyfidasim_core_routine(
             ## -------------------------------------------------------------
             ## -Determine CHARGE EXCHANGE (CX) and IONIZATION probabiliites-
             ## -------------------------------------------------------------
-            ## For this we firstly define the velocity vector. We will either use a thermal velocity:
-            '''
-            v_xyz_new = np.sqrt(ti[dis,ii][:,np.newaxis] * 1.e3 * consts.e / (prof_ai*consts.atomic_mass)) * 100. * np.random.randn(np.shape(ir)[0],3)  + vrot[dis,:, ii]
-            
-            ## Check if we should consider a fast-ion velocity vector:
-            if fbm_afbm > 0:
-                denp_slice = np.copy(denp[dis, ii])
-                denf_slice = denf_arr[dis, ii]
-                #Correct for quasineutrality
-                denp_slice -= np.nan_to_num(denf_arr[dis, ii])
-                
-                ratio = np.zeros_like(denp_slice)
-                
-                valid_mask = (denp_slice > 0) & ~np.isnan(denf_slice)
-                ratio[valid_mask] = denf_slice[valid_mask] / denp_slice[valid_mask]
-                
-                fast_ion_mask = ratio > np.random.rand(ratio.shape[0])
-                
-                if np.any(fast_ion_mask):
-                    xyz_for_fast_ion = xyzc_arr[dis, :, ii][fast_ion_mask]
-                    
-                    fast_ion_velocities = mc_fastion(xyz_for_fast_ion, fields_params, fbm_params)
-                    
-                    v_xyz_new[fast_ion_mask, :] = fast_ion_velocities
-            else:
-                fast_ion_mask = np.zeros_like(ir,dtype = bool)
-            
-            vnet_new= v_xyz[dis,:]-v_xyz_new
-            vnet_new_square = np.sum(vnet_new**2,axis=1) / 1.e4  # [m/s]**2
-            ## and calculate the relative collision energy with the neutral (NBI or halo neutral)
-            eb_nrate_log = np.log10(0.5 * consts.atomic_mass * vnet_new_square / consts.e / 1.e3)  # [keV/amu]
-            ## this allows us to infer the neutraliztion rate. Note that we assume Ti=0 which means that only the relative velocity
-            ## between the ion and neutral counts -- i.e. this is the bare cross-section (note also the log(-99)~0)
-            sigma_v_cx = table_interp(tb_neutrates,eb_nrate_log,np.ones(np.shape(eb_nrate_log)[0])*-99.,tb_energy_ax,tb_temp_ax) # [cm^3/s]
-            nrate = sigma_v_cx*denp[dis,ii, np.newaxis, np.newaxis] # [1/s]
-            
-            '''
-            ## -------------------------------------------------------------
-            ## -Determine CHARGE EXCHANGE (CX) and IONIZATION probabiliites-
-            ## -------------------------------------------------------------
             # 1. Setup initial thermal velocities
             v_xyz_new = np.sqrt(ti[dis,ii][:,np.newaxis] * 1.e3 * consts.e / (prof_ai*consts.atomic_mass)) * 100. * np.random.randn(np.shape(ir)[0],3)  + vrot[dis,:, ii]
             

@@ -272,15 +272,15 @@ def get_s_along_path(p0, v, dl,
 
         plasma_mask = s < s_threshold
 
-        # FIRST entry index
-        entry_idx = np.where(plasma_mask)[0][0]
+        # Find all indices where the particle is inside the plasma
+        plasma_indices = np.where(plasma_mask)[0]
 
-        # Build a mask that keeps:
-        #  - every step before entry_idx (even if outside)
-        #  - only those steps inside plasma after entry
+        # Get the very last index where the beam is inside the plasma
+        last_exit_idx = plasma_indices[-1]
+
+        # Build a mask that keeps everything from the NBI source up to the final exit.
         keep_mask = np.zeros_like(plasma_mask)
-        keep_mask[:entry_idx] = True
-        keep_mask[entry_idx:] = plasma_mask[entry_idx:]
+        keep_mask[:last_exit_idx + 1] = True
         
         # apply final mask
         s          = s[keep_mask]
