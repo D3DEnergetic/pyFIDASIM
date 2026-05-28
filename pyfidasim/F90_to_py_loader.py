@@ -401,15 +401,17 @@ def calc_arot_brot(direction):
     y = direction[2]
     x = np.sqrt(direction[0]**2 + direction[1]**2)
     b = np.arctan2(y, x)
-    Arot = np.array([[np.cos(b), 0., np.sin(b)],
-                     [0., 1., 0.],
-                     [-np.sin(b), 0., np.cos(b)]])
+    
+    Arot = np.array([[np.cos(b),  0., -np.sin(b)],
+                     [0.,         1.,  0.       ],
+                     [np.sin(b),  0.,  np.cos(b)]])
+    
     y = direction[1]
     x = direction[0]
     a = np.arctan2(y, x)
     Brot = np.array([[np.cos(a), -np.sin(a), 0.],
                      [np.sin(a),  np.cos(a), 0.],
-                     [0., 0., 1.]])
+                     [0.,         0.,        1.]])
     return Arot, Brot
 
 def f90_to_py(path,runid,geqdsk,fbm_file=None, emin=0, emax=100, pmin=-1, pmax=1):
