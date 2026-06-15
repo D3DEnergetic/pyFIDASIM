@@ -8,6 +8,19 @@ Please note this version is slower since it employs vectorization, but limited p
 
 Warning: Halo results will be incorrect unless you include the fast-ion distribution.
 
+---
+*Citation Recommendation:*
+> Edmondson, A., Geiger, B., Stewart, S.D., Romba, T., Dux, R., Poloskei, P.Z., Smith, D.R. (2026). pyFIDASIM [Software].
+
+```bibtex
+@software{Pyros2026,
+  author = {Edmondson, A., Geiger, B., Stewart, S.D., Romba, T., Dux, R., Poloskei, P.Z., and Smith, D.R.},
+  title = {pyFIDASIM},
+  year = {2026},
+  publisher = {GitLab},
+}
+```
+
 ## Installation
 Since pyfidasim is currently not on "pip" or any other equivalent package distributor, there are several different installation methods.
 
