@@ -13,7 +13,7 @@ Warning: Halo results will be incorrect unless you include the fast-ion distribu
 > Edmondson, A., Geiger, B., Stewart, S.D., Romba, T., Dux, R., Poloskei, P.Z., Smith, Liu, D., D.R. (2026). pyFIDASIM [Software].
 
 ```bibtex
-@software{Pyros2026,
+@software{pyFIDASIM,
   author = {Edmondson, A., Geiger, B., Stewart, S.D., Romba, T., Dux, R., Poloskei, P.Z., Liu, D., and Smith, D.R.},
   title = {pyFIDASIM},
   year = {2026},
